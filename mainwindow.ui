@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+  <class>MainWindow</class>
+  <widget class="QMainWindow" name="MainWindow">
+    <property name="geometry">
+      <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>800</width>
+        <height>600</height>
+      </rect>
+    </property>
+    <property name="windowTitle">
+      <string>АВИАМОС</string>
+    </property>
+    <widget class="QWidget" name="centralwidget">
+      <layout class="QVBoxLayout" name="verticalLayout">
+        
+        <!-- Группа поиска -->
+        <item>
+          <widget class="QGroupBox" name="groupBoxSearch">
+            <property name="title">
+              <string>Поиск билетов</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+                <widget class="QLineEdit" name="lineEditFrom">
+                  <property name="placeholderText">
+                    <string>Откуда</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLineEdit" name="lineEditTo">
+                  <property name="placeholderText">
+                    <string>Куда</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QDateEdit" name="dateEditWhen">
+                  <property name="displayFormat">
+                    <string>dd.MM.yyyy</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QLineEdit" name="dateEditBack">
+                  <property name="placeholderText">
+                    <string>дд.мм.гггг</string>
+                  </property>
+                </widget>
+              </item>
+              <item>
+                <widget class="QComboBox" name="comboBoxClass">
+                  <item>
+                    <property name="text">
+                      <string>Эконом</string>
+                    </property>
+                  </item>
+                  <item>
+                    <property name="text">
+                      <string>Бизнес</string>
+                    </property>
+                  </item>
+                </widget>
+              </item>
+              <item>
+                <widget class="QPushButton" name="pushButtonSearch">
+                  <property name="text">
+                    <string>Найти</string>
+                  </property>
+                </widget>
+              </item>
+            </layout>
+          </widget>
+        </item>
+        
+        <!-- Таблица билетов -->
+        <item>
+          <widget class="QTableWidget" name="tableWidgetTickets"/>
+        </item>
+        
+        <!-- Данные пассажира -->
+        <item>
+          <widget class="QGroupBox" name="groupBoxPassenger">
+            <property name="title">
+              <string>Данные пассажира</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout">
+              <item row="0" column="0">
+                <widget class="QLabel" name="labelLastName">
+                  <property name="text">
+                    <string>Фамилия:</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="0" column="1">
+                <widget class="QLineEdit" name="lineEditLastName"/>
+              </item>
+              <item row="1" column="0">
+                <widget class="QLabel" name="labelFirstName">
+                  <property name="text">
+                    <string>Имя:</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="1" column="1">
+                <widget class="QLineEdit" name="lineEditFirstName"/>
+              </item>
+              <item row="2" column="0">
+                <widget class="QLabel" name="labelBirthDate">
+                  <property name="text">
+                    <string>Дата рождения:</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="2" column="1">
+                <widget class="QDateEdit" name="dateEditBirth">
+                  <property name="displayFormat">
+                    <string>dd.MM.yyyy</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="3" column="0">
+                <widget class="QLabel" name="labelDocNumber">
+                  <property name="text">
+                    <string>№ Документа:</string>
+                  </property>
+                </widget>
+              </item>
+              <item row="3" column="1">
+                <widget class="QLineEdit" name="lineEditDocNumber"/>
+              </item>
+            </layout>
+          </widget>
+        </item>
+        
+        <!-- Кнопка бронирования -->
+        <item>
+          <widget class="QPushButton" name="pushButtonBook">
+            <property name="text">
+              <string>Оформить билет</string>
+            </property>
+          </widget>
+        </item>
+      </layout>
+    </widget>
+  </widget>
+  <resources/>
+  <connections/>
+</ui>
