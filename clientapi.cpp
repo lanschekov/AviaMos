@@ -59,15 +59,19 @@ void ClientAPI::onDisconnected() {
     qDebug() << "Disconnected from server";
 }
 
+QString ClientAPI::getCurrentUser() const {
+    return currentUser;
+}
+
 void ClientAPI::onReadyRead() {
     QByteArray data = m_socket->readAll();
     QString response = QString::fromUtf8(data).trimmed();
-    qDebug() << "Server response:" << response;  // Логируем ответ
 
-    emit dataReceived(response);  // Всегда отправляем сырой ответ
+    emit dataReceived(response);
 
     if(response.startsWith("auth+")) {
-        emit authSuccess();  // Успешная авторизация
+        currentUser = response.split(' ')[1]; // Сохраняем логин пользователя
+        emit authSuccess();
     }
     else if(response.startsWith("REG+")) {
         emit regSuccess();  // Успешная регистрация

@@ -11,15 +11,13 @@ void DatabaseSingletonDestroyer::initialize(DatabaseSingleton* p) {
     p_instance = p;
 }
 
+QMutex DatabaseSingleton::m_mutex; // Добавляем в начало файла
+
 DatabaseSingleton::DatabaseSingleton() {
+    QMutexLocker locker(&m_mutex); // Защищаем инициализацию
+
     db = QSqlDatabase::addDatabase("QSQLITE");
-
-    // Получаем путь к папке с исполняемым файлом
     QString dbPath = QCoreApplication::applicationDirPath() + "/" + DatabaseName;
-
-    // Для отладки выведем путь
-    qDebug() << "Database path:" << dbPath;
-
     db.setDatabaseName(dbPath);
 
     if (!db.open()) {
@@ -27,24 +25,23 @@ DatabaseSingleton::DatabaseSingleton() {
         return;
     }
 
-    qDebug() << "Database opened successfully at:" << db.databaseName();
-
+    // Оптимизации SQLite
     QSqlQuery query(db);
-    QString createTableQuery =
-        "CREATE TABLE IF NOT EXISTS User ("
-        "login VARCHAR(20) NOT NULL UNIQUE, "
-        "password VARCHAR(20) NOT NULL, "
-        "status VARCHAR(20) NOT NULL)";
-
-    if (!query.exec(createTableQuery)) {
-        qDebug() << "Table creation error:" << query.lastError().text();
-    } else {
-        qDebug() << "Table User created or already exists";
-    }
+    query.exec("PRAGMA journal_mode=WAL");
+    query.exec("PRAGMA synchronous=NORMAL");
+    query.exec("PRAGMA foreign_keys=ON");
 }
 
-DatabaseSingleton::~DatabaseSingleton() {
-    db.close();
+
+DatabaseSingleton::~DatabaseSingleton()
+{
+    QString connectionName = db.connectionName();
+
+    if (db.isOpen()) {
+        db.close();
+    }
+
+    QSqlDatabase::removeDatabase(connectionName);
 }
 
 DatabaseSingleton* DatabaseSingleton::getInstance() {
@@ -56,17 +53,35 @@ DatabaseSingleton* DatabaseSingleton::getInstance() {
 }
 
 bool DatabaseSingleton::reg(const QString& login, const QString& password, const QString& status) {
-    QSqlQuery query(db);
-    query.prepare("INSERT INTO User (login, password, status) VALUES (:login, :password, :status)");
-    query.bindValue(":login", login);
-    query.bindValue(":password", password);
-    query.bindValue(":status", status);
+    QMutexLocker locker(&m_mutex); // Защищаем метод
 
-    if(!query.exec()) {
-        qDebug() << "Ошибка регистрации:" << query.lastError().text();
+    if (!db.isOpen()) {
+        qDebug() << "Database not open! Reopening...";
+        if (!db.open()) {
+            qDebug() << "Failed to reopen database:" << db.lastError().text();
+            return false;
+        }
+    }
+
+    QSqlQuery query(db);
+    query.prepare("SELECT login FROM User WHERE login = ?");
+    query.addBindValue(login);
+
+    if (!query.exec()) {
+        qDebug() << "Check user error:" << query.lastError().text();
         return false;
     }
-    return true;
+
+    if (query.next()) {
+        return false; // Пользователь уже существует
+    }
+
+    query.prepare("INSERT INTO User (login, password, status) VALUES (?, ?, ?)");
+    query.addBindValue(login);
+    query.addBindValue(password);
+    query.addBindValue(status);
+
+    return query.exec();
 }
 
 QStringList DatabaseSingleton::auth(const QString& login, const QString& password, int id_connection) {
@@ -102,6 +117,69 @@ void DatabaseSingleton::printUsersTable() const {
                  << "|" << password.leftJustified(20, ' ')
                  << "|" << status.leftJustified(20, ' ') << "|";
     }
+}
+
+bool DatabaseSingleton::createTicketsTable() {
+    QSqlQuery query(db);
+    QString createTableQuery =
+        "CREATE TABLE IF NOT EXISTS Tickets ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "departure VARCHAR(50) NOT NULL, "
+        "destination VARCHAR(50) NOT NULL, "
+        "departure_date DATE NOT NULL, "
+        "return_date DATE, "
+        "flight_class VARCHAR(20) NOT NULL, "
+        "price REAL NOT NULL, "
+        "booked_by VARCHAR(20) DEFAULT NULL, "
+        "FOREIGN KEY(booked_by) REFERENCES User(login))";
+
+    return query.exec(createTableQuery);
+}
+
+QVector<Ticket> DatabaseSingleton::getAvailableTickets() {
+    QVector<Ticket> tickets;
+    QSqlQuery query(db);
+    query.exec("SELECT * FROM Tickets WHERE booked_by IS NULL");
+
+    while (query.next()) {
+        // Преобразуем дату из SQLite формата (YYYY-MM-DD)
+        QDate depDate = QDate::fromString(query.value("departure_date").toString(), Qt::ISODate);
+
+        Ticket ticket(
+            query.value("departure").toString(),
+            query.value("destination").toString(),
+            depDate,
+            query.value("return_date").isNull() ?
+                QDate() : QDate::fromString(query.value("return_date").toString(), Qt::ISODate),
+            query.value("flight_class").toString(),
+            query.value("price").toDouble()
+            );
+        tickets.append(ticket);
+    }
+    return tickets;
+}
+
+bool DatabaseSingleton::bookTicket(int ticketId, const QString& username) {
+    QSqlQuery query(db);
+    query.prepare("UPDATE Tickets SET booked_by = :username WHERE id = :id AND booked_by IS NULL");
+    query.bindValue(":username", username);
+    query.bindValue(":id", ticketId);
+
+    return query.exec() && query.numRowsAffected() > 0;
+}
+
+bool DatabaseSingleton::addTicket(const Ticket& ticket) {
+    QSqlQuery query(db);
+    query.prepare("INSERT INTO Tickets (departure, destination, departure_date, return_date, flight_class, price) "
+                  "VALUES (:departure, :destination, :departure_date, :return_date, :flight_class, :price)");
+    query.bindValue(":departure", ticket.getFrom());
+    query.bindValue(":destination", ticket.getTo());
+    query.bindValue(":departure_date", ticket.getDate());
+    query.bindValue(":return_date", ticket.getReturnDate());
+    query.bindValue(":flight_class", ticket.getFlightClass());
+    query.bindValue(":price", ticket.getPrice());
+
+    return query.exec();
 }
 
 DatabaseSingleton* DatabaseSingleton::p_instance = nullptr;

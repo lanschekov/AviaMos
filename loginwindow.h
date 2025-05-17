@@ -22,7 +22,9 @@ signals:
 private slots:
     void on_btnChange_clicked();
     void on_btnAuth_clicked();
-    void handleServerResponse(const QString &response);
+    void onAuthSuccess();          // Добавляем объявление
+    void onAuthFailed();           // Добавляем объявление
+    void onRegSuccess();           // Добавляем объявление
 
 private:
     Ui::LoginWindow *ui;

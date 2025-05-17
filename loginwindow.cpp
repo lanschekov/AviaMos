@@ -1,5 +1,6 @@
 #include "loginwindow.h"
 #include "ui_loginwindow.h"
+#include "mainwindow.h"
 #include <QMessageBox>
 
 LoginWindow::LoginWindow(QWidget *parent) :
@@ -12,13 +13,47 @@ LoginWindow::LoginWindow(QWidget *parent) :
     ui->leEmail->setVisible(false);
     ui->label_3->setVisible(false);
 
-    // Подключаемся к серверу
     ClientAPI::getInstance()->connectToServer("localhost", 33333);
+
+    // Подключаем сигналы ClientAPI к слотам LoginWindow
+    connect(ClientAPI::getInstance(), &ClientAPI::authSuccess, this, &LoginWindow::onAuthSuccess);
+    connect(ClientAPI::getInstance(), &ClientAPI::authFailed, this, &LoginWindow::onAuthFailed);
+    connect(ClientAPI::getInstance(), &ClientAPI::regSuccess, this, &LoginWindow::onRegSuccess);
 }
 
 LoginWindow::~LoginWindow()
 {
     delete ui;
+}
+
+void LoginWindow::onAuthSuccess() {
+    // Создаем новое окно приложения
+    MainWindow *mainWindow = new MainWindow();
+    mainWindow->show();
+
+    // Очищаем поля для следующего входа
+    ui->leLogin->clear();
+    ui->lePassword->clear();
+
+    emit loginSucceeded();
+}
+
+void LoginWindow::onRegSuccess() {
+    QMessageBox::information(this, "Успех", "Регистрация прошла успешно!\nТеперь вы можете авторизоваться");
+    isRegistrationMode = false;
+    ui->btnAuth->setText("Authorization");
+    ui->leEmail->setVisible(false);
+    ui->label_3->setVisible(false);
+
+    // Очищаем поля
+    ui->leLogin->clear();
+    ui->lePassword->clear();
+}
+
+void LoginWindow::onAuthFailed() {
+    QMessageBox::warning(this, "Ошибка",
+                         isRegistrationMode ? "Регистрация не удалась: такой логин уже существует"
+                                            : "Неверный логин или пароль");
 }
 
 void LoginWindow::on_btnChange_clicked()
@@ -48,33 +83,5 @@ void LoginWindow::on_btnAuth_clicked()
         ClientAPI::getInstance()->sendCommand("register " + login + " " + password);
     } else {
         ClientAPI::getInstance()->sendCommand("login " + login + " " + password);
-    }
-
-    connect(ClientAPI::getInstance(), &ClientAPI::dataReceived,
-            this, &LoginWindow::handleServerResponse);
-}
-
-void LoginWindow::handleServerResponse(const QString &response) {
-    disconnect(ClientAPI::getInstance(), &ClientAPI::dataReceived,
-               this, &LoginWindow::handleServerResponse);
-
-    if(response.startsWith("auth+")) {
-        // Успешная авторизация
-        QMessageBox::information(this, "Успех", "Авторизация прошла успешно!");
-        emit loginSucceeded();
-    }
-    else if(response.startsWith("REG+")) {
-        // Успешная регистрация
-        QMessageBox::information(this, "Успех", "Регистрация прошла успешно!\nТеперь вы можете авторизоваться");
-        isRegistrationMode = false;
-        ui->btnAuth->setText("Authorization");
-        ui->leEmail->setVisible(false);
-        ui->label_3->setVisible(false);
-    }
-    else {
-        // Ошибка
-        QMessageBox::warning(this, "Ошибка",
-                             isRegistrationMode ? "Регистрация не удалась: такой логин уже существует"
-                                                : "Неверный логин или пароль");
     }
 }

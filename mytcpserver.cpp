@@ -68,10 +68,16 @@ void MyTcpServer::processCommand(QTcpSocket* client, const QString& command) {
 }
 
 void MyTcpServer::handleRegistration(QTcpSocket* client, const QString& login, const QString& password) {
-    bool success = DatabaseSingleton::getInstance()->reg(login, password);
-    QString response = success ? "REG+ " + login + "\r\n" : "REG- Registration failed\r\n";
+    DatabaseSingleton* db = DatabaseSingleton::getInstance();
+
+    if (!db->getDatabase().isOpen()) {
+        client->write("REG- Ошибка подключения к базе данных\r\n");
+        return;
+    }
+
+    bool success = db->reg(login, password);
+    QString response = success ? "REG+ " + login + "\r\n" : "REG- " + (db->getDatabase().lastError().isValid() ? db->getDatabase().lastError().text() : "Логин уже существует") + "\r\n";
     client->write(response.toUtf8());
-    log(success ? "Успешная регистрация: " + login : "Ошибка регистрации: " + login);
 }
 
 void MyTcpServer::handleLogin(QTcpSocket* client, const QString& login, const QString& password) {

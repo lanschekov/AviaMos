@@ -7,12 +7,15 @@
 #define DATABASE_EXPORT Q_DECL_IMPORT
 #endif
 
+#include <QMutex>
+#include <QThread>
 #include <QDebug>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QSqlRecord>
 #include <QVariant>
+#include <ticket.h>
 
 #define DatabaseName "Test.db"
 
@@ -29,6 +32,7 @@ public:
 
 class DatabaseSingleton {
 private:
+    static QMutex m_mutex;
     static DatabaseSingleton* p_instance;
     static DatabaseSingletonDestroyer destroyer;
     QSqlDatabase db;
@@ -48,6 +52,10 @@ public:
     bool reg(const QString& login, const QString& password, const QString& status = "user");
     QStringList auth(const QString& login, const QString& password, int id_connection);
     void printUsersTable() const;
+    bool createTicketsTable();
+    QVector<Ticket> getAvailableTickets();
+    bool bookTicket(int ticketId, const QString& username);
+    bool addTicket(const Ticket& ticket);
 };
 
 #endif // DATABASESINGLETON_H

@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QVector>
 #include "ticket.h"
+#include <stdexcept>
+#include <QStatusBar>
 
 namespace Ui {
 class MainWindow;

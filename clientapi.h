@@ -25,6 +25,7 @@ private:
     static ClientAPI* p_instance;
     static SingletonDestroyer destroyer;
     QTcpSocket* m_socket;
+    QString currentUser;
 
 protected:
     ClientAPI(QObject *parent = nullptr);
@@ -38,6 +39,7 @@ public:
     void connectToServer(const QString& host, quint16 port);
     void sendCommand(const QString& command);
     bool isConnected() const;
+    QString getCurrentUser() const;
 
 signals:
     void connected();
